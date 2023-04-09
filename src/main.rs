@@ -1,14 +1,19 @@
 use std::path::PathBuf;
 use std::fs;
+use serde::{Deserialize, Serialize};
 
+
+#[derive(Serialize, Deserialize)]
 struct Process {
     cpu_usage: String,
+    name: String,
     id: u32,
     cmdline: String,
 }
 
+#[derive(Serialize, Deserialize)]
 struct Tree {
-    proc: Process,
+    process: Process,
     children: Option<Vec<Box<Tree>>>
 }
 
@@ -20,16 +25,22 @@ fn stats(pid: u32) -> Process {
 
     let cmdline : String = fs::read_to_string(path.join("cmdline")).unwrap_or_default();
     let id : u32 = pid;
-    let cpu_usage : String = fs::read_to_string(path.join("stat")).unwrap_or_default();
+    let stats = fs::read_to_string(path.join("stat")).unwrap_or_default();
+    let stats : Vec<_>= stats.split(" ").collect();
 
+    // TODO: calc cpu_usage
+
+    let cpu_usage = stats[13].to_string();
+    let name = &stats[1][1..&stats[1].len()-1];
+    let name = name.to_string();
     Process {
         cpu_usage,
+        name,
         id,
         cmdline,
     }
 }
 
-// TODO: improve clone() and u32 params, could be better if we just pass a String to this function
 fn children(pid: u32) -> String {
     let pid = pid.to_string();
     let path = PathBuf::new()
@@ -42,49 +53,53 @@ fn children(pid: u32) -> String {
     fs::read_to_string(path).unwrap_or_default()
 }
 
-fn ptree_userspace() -> Option<Tree> {
+fn ptree(root_pid: u32 ) -> Option<Tree> {
     Some(build_tree(Tree {
-        proc: stats(1),
+        process: stats(root_pid),
         children: None,
     }))
 }
 
-// TODO: remove None in children, but how?
+fn ptree_userspace() -> Option<Tree> {
+    ptree(1)
+}
+
 fn ptree_kernel() -> Option<Tree> {
-    Some(build_tree(Tree {
-        proc: stats(2),
-        children: None,
-    }))
+    ptree(2)
 }
 
 // recursively building a tree
 fn build_tree(tree: Tree) -> Tree {
-    let pid = tree.proc.id;
+    let pid = tree.process.id;
     let children = children(pid);
 
     if children.is_empty() {
         return tree;
     }
 
-    // TODO
     let mut v : Vec<Box<Tree>> = Vec::new();
 
     for i in children.trim().split(" ") {
         let child_pid : u32 = i.parse().expect("Can't convert id of pid");
 
         let pchild = stats(child_pid);
-        v.push(Box::new(build_tree(Tree {proc: pchild, children: None})));
+        v.push(Box::new(build_tree(Tree {process: pchild, children: None})));
     }
 
     return Tree {
-        proc: tree.proc,
+        process: tree.process,
         children: Some(v)
     };
 
 }
 
-
 fn main() {
-    ptree_kernel();
-    ptree_userspace();
+    let pstree_kernelspace = ptree_kernel();
+    let pstree_userspace = ptree_userspace();
+
+    println!("Kernelspace:");
+    println!("{}",serde_json::to_string(&pstree_kernelspace).expect("error during parsing"));
+    println!("Userspace:");
+    println!("{}",serde_json::to_string(&pstree_userspace).expect("error during parsing"));
+
 }

@@ -1,105 +1,56 @@
-use std::path::PathBuf;
-use std::fs;
-use serde::{Deserialize, Serialize};
+mod pstree;
+use eframe::egui;
+use egui::ScrollArea;
 
-
-#[derive(Serialize, Deserialize)]
-struct Process {
-    cpu_usage: String,
-    name: String,
-    id: u32,
-    cmdline: String,
-}
-
-#[derive(Serialize, Deserialize)]
-struct Tree {
-    process: Process,
-    children: Option<Vec<Box<Tree>>>
+fn main_egui() {
+    let mut native_options = eframe::NativeOptions::default();
+    eframe::run_native("Mori PS", native_options, Box::new(|cc| Box::new(MoriTreeApp::new(cc)))).unwrap();
 }
 
 
-fn stats(pid: u32) -> Process {
-    let path = PathBuf::new()
-        .join("/proc")
-        .join(pid.to_string());
+#[derive(Default)]
+struct MoriTreeApp {}
 
-    let cmdline : String = fs::read_to_string(path.join("cmdline")).unwrap_or_default();
-    let id : u32 = pid;
-    let stats = fs::read_to_string(path.join("stat")).unwrap_or_default();
-    let stats : Vec<_>= stats.split(" ").collect();
-
-    // TODO: calc cpu_usage
-
-    let cpu_usage = stats[13].to_string();
-    let name = &stats[1][1..&stats[1].len()-1];
-    let name = name.to_string();
-    Process {
-        cpu_usage,
-        name,
-        id,
-        cmdline,
+impl MoriTreeApp {
+    fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        // Customize egui here with cc.egui_ctx.set_fonts and cc.egui_ctx.set_visuals.
+        // Restore app state using cc.storage (requires the "persistence" feature).
+        // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
+        // for e.g. egui::PaintCallback.
+        Self::default()
     }
 }
 
-fn children(pid: u32) -> String {
-    let pid = pid.to_string();
-    let path = PathBuf::new()
-        .join("/proc")
-        .join(pid.clone())
-        .join("task")
-        .join(pid.clone())
-        .join("children");
-
-    fs::read_to_string(path).unwrap_or_default()
+fn ui_build_tree(ui: &mut egui::Ui) {
+    let pstree_userspace =  pstree::userspace_tree();
+    pstree_userspace.unwrap().ui(ui);
 }
 
-fn ptree(root_pid: u32 ) -> Option<Tree> {
-    Some(build_tree(Tree {
-        process: stats(root_pid),
-        children: None,
-    }))
-}
+impl eframe::App for MoriTreeApp {
 
-fn ptree_userspace() -> Option<Tree> {
-    ptree(1)
-}
+   fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+       egui::CentralPanel::default()
+           .show(ctx, |ui| {
+               ScrollArea::vertical().show(ui, |ui| {
+                   ui_build_tree(ui);
+               });
+       });
 
-fn ptree_kernel() -> Option<Tree> {
-    ptree(2)
-}
-
-// recursively building a tree
-fn build_tree(tree: Tree) -> Tree {
-    let pid = tree.process.id;
-    let children = children(pid);
-
-    if children.is_empty() {
-        return tree;
-    }
-
-    let mut v : Vec<Box<Tree>> = Vec::new();
-
-    for i in children.trim().split(" ") {
-        let child_pid : u32 = i.parse().expect("Can't convert id of pid");
-
-        let pchild = stats(child_pid);
-        v.push(Box::new(build_tree(Tree {process: pchild, children: None})));
-    }
-
-    return Tree {
-        process: tree.process,
-        children: Some(v)
-    };
+       // TODO: repaint every x ms, not every frame
+       ctx.request_repaint();
+   }
 
 }
 
-fn main() {
-    let pstree_kernelspace = ptree_kernel();
-    let pstree_userspace = ptree_userspace();
-
+fn _main_json() {
+    let pstree_kernelspace = pstree::kernel_tree();
+    let pstree_userspace =  pstree::userspace_tree();
     println!("Kernelspace:");
     println!("{}",serde_json::to_string(&pstree_kernelspace).expect("error during parsing"));
     println!("Userspace:");
     println!("{}",serde_json::to_string(&pstree_userspace).expect("error during parsing"));
+}
 
+fn main() {
+    main_egui();
 }

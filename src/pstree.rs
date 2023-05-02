@@ -153,7 +153,7 @@ fn build_tree_with_stats( tree: Tree, map: &mut std::collections::HashMap<u32,Ve
             // insert into map again?
         }
 
-        v.push(Box::new(build_tree(Tree {process: pchild, children: None})));
+        v.push(Box::new(build_tree_with_stats(Tree {process: pchild, children: None}, map)));
     }
 
     return Tree {
@@ -180,13 +180,7 @@ impl Tree {
     }
 
     fn ui_impl(&mut self, ui: &mut Ui, depth: usize, name: &str, current_index: &mut u32) {
-        /*
-        let r = egui::CollapsingHeader::new(name)
-            .default_open(depth < 1)
-            .show(ui, |ui| self.children_ui(ui, depth, current_index));
-        */
 
-        // let r = r.interact(egui::Sense::click());
         let mut state = egui::collapsing_header::CollapsingState::load_with_default_open(
             ui.ctx(),
             name.to_string().clone().into(),
@@ -209,35 +203,11 @@ impl Tree {
                     let s = &s[1..s.len()];
                     if let Ok(c)  = s.parse::<u32>() {
                         *current_index = c;
-                        println!("Clicked {} = {}",c,name);
+                        println!("Clicked {} = {}/{}",c,current_index,name);
                     }
                 }
             })
             .body(|ui| self.children_ui(ui, depth, current_index));
-
-        /*
-        if let Some(r) = r.body_response {
-            if r.hovered() {
-                let mut s = name.split(' ');
-                let s = s.next().unwrap().trim();
-                let s = &s[1..s.len()];
-                println!("name is {}",name);
-                if let Ok(c)  = s.parse::<u32>() {
-                    *current_index = c;
-                }
-            }
-            if r.clicked() {
-            println!("Response r CLICKED");
-                // record pid
-                let mut s = name.split(' ');
-                let s = s.next().unwrap().trim();
-                let s = &s[1..s.len()];
-                if let Ok(c)  = s.parse::<u32>() {
-                    *current_index = c;
-                }
-            }
-        }
-        */
     }
 
     fn children_ui(&mut self, ui: &mut Ui, depth: usize, current_index: &mut u32) {

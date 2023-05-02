@@ -45,17 +45,15 @@ impl eframe::App for MoriTreeApp {
        });
 
        egui::CentralPanel::default().show(ctx, |ui| {
+           ui.label(format!("Process {}",self.current_pid));
            let v = self.map.get(&self.current_pid);
            if v.is_none() {
-               let s = String::new();
-               ui.label(s);
            } else {
                let s = v.unwrap().iter().map(|e| e.to_string());
                let s : Vec<_> = s.collect(); // TODO: how to do this in oneline in rust, calling Vec::collect: this: collect::Vec()
-               ui.label(format!("Process {}",self.current_pid));
 
                use egui::plot::{Line, Plot, PlotPoints};
-               let sin: PlotPoints = (0..10000).map(|i| {
+               let g: PlotPoints = (0..s.len()).map(|i| {
                    let mut y : u32 = 0;
                    if i >= s.len() {
                        y = 0;
@@ -64,7 +62,7 @@ impl eframe::App for MoriTreeApp {
                    }
                    [i as f64,y as f64]
                }).collect();
-               let line = Line::new(sin);
+               let line = Line::new(g);
                Plot::new("Usage").view_aspect(2.0).show(ui, |plot_ui| plot_ui.line(line));
            }
 

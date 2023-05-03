@@ -21,7 +21,18 @@ impl MoriTreeApp {
         // Restore app state using cc.storage (requires the "persistence" feature).
         // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
         // for e.g. egui::PaintCallback.
+        let ctx = cc.egui_ctx.clone();
+        std::thread::Builder::new().name("Worker_thread".to_string()).spawn(move || {
+            loop {
+                // refresh data every X ms
+                ctx.request_repaint();
+                let d = std::time::Duration::from_millis(5000);
+                std::thread::sleep(d);
+            }
+        });
+
         Self::default()
+
     }
 }
 

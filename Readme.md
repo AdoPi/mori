@@ -1,4 +1,5 @@
 # Mori PS
 
-Pstree for fun in Rust.
+Pstree GUI for fun in Rust.
 
+![plot](./rust-pstree.png)

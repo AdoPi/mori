@@ -50,7 +50,7 @@ impl eframe::App for MoriTreeApp {
            if v.is_none() {
            } else {
                let s = v.unwrap().iter().map(|e| e.to_string());
-               let s : Vec<_> = s.collect(); // TODO: how to do this in oneline in rust, calling Vec::collect: this: collect::Vec()
+               let s : Vec<_> = s.collect(); // TODO: collect::Vec<_>() oneliner
 
                use egui::plot::{Line, Plot, PlotPoints};
                let g: PlotPoints = (0..s.len()).map(|i| {

@@ -52,9 +52,40 @@ fn stats(pid: u32) -> Process {
         }
     }
 
-    let cpu_usage = stats[13].to_string();
+    let mut cpu_usage = stats[13].to_string();
     let name = &stats[1][1..&stats[1].len()-1];
     let name = name.to_string();
+
+    // Calc cpu_usage
+    if stats.len() >= 20 {
+        let utime : i64 = stats[13].parse().unwrap_or(0);
+        let stime : i64 = stats[14].parse().unwrap_or(0);
+        let cutime : i64 = stats[15].parse().unwrap_or(0);
+        let cstime : i64 = stats[16].parse().unwrap_or(0);
+        let starttime : i64 = stats[21].parse().unwrap_or(0);
+
+        let total_time : i64 = utime + stime;
+        let total_time : i64 = total_time + cutime  + cstime; // include children time
+
+        let path = PathBuf::new()
+            .join("/proc");
+        let uptime = fs::read_to_string(path.join("uptime")).unwrap_or_default();
+        let uptime = uptime.split(".").next(); // TODO: LOCALE needs to be EN
+        let uptime = uptime.unwrap();
+        let uptime : i64 = uptime.parse().unwrap();
+
+        fn get_hertz() -> i64 {
+            unsafe { libc::sysconf(libc::_SC_CLK_TCK) }
+        }
+
+        let seconds :f64 = uptime as f64 - (starttime / get_hertz()) as f64;
+        let usage : f64 = 100.0 * ( (total_time / get_hertz())) as f64 / seconds;
+        cpu_usage = usage.to_string();
+
+        // TODO: use Logger::debug rusty way
+        // println!("process={};utime={};stime={};starttime={};total_time={};uptime={};seconds={};cpu_usage={}",id,utime,stime,starttime,total_time,uptime,seconds,cpu_usage);
+    }
+
     Process {
         cpu_usage,
         name,
@@ -83,7 +114,7 @@ fn ptree(root_pid: u32 ) -> Option<Tree> {
 }
 
 
-fn ptree_with_stats(root_pid: u32, map: &mut std::collections::HashMap<u32,Vec<u32>>) -> Option<Tree> {
+fn ptree_with_stats(root_pid: u32, map: &mut std::collections::HashMap<u32,Vec<f64>>) -> Option<Tree> {
     Some(build_tree_with_stats(Tree {
         process: stats(root_pid),
         children: None,
@@ -95,7 +126,7 @@ pub fn userspace_tree() -> Option<Tree> {
 }
 
 
-pub fn userspace_tree_with_stats(map: &mut std::collections::HashMap<u32,Vec<u32>>) -> Option<Tree> {
+pub fn userspace_tree_with_stats(map: &mut std::collections::HashMap<u32,Vec<f64>>) -> Option<Tree> {
     ptree_with_stats(1,map)
 }
 
@@ -128,7 +159,7 @@ fn build_tree(tree: Tree) -> Tree {
 }
 
 
-fn build_tree_with_stats( tree: Tree, map: &mut std::collections::HashMap<u32,Vec<u32>>) -> Tree {
+fn build_tree_with_stats( tree: Tree, map: &mut std::collections::HashMap<u32,Vec<f64>>) -> Tree {
 
     let pid = tree.process.id;
     let children = children(pid);
@@ -148,7 +179,7 @@ fn build_tree_with_stats( tree: Tree, map: &mut std::collections::HashMap<u32,Ve
         if vc.is_none() {
             map.insert(pchild.id, Vec::new());
         } else {
-            let cpu_u : u32 = pchild.cpu_usage.trim().parse().unwrap();
+            let cpu_u : f64 = pchild.cpu_usage.trim().parse().unwrap();
             vc.unwrap().push(cpu_u);
             // insert into map again?
         }
@@ -203,7 +234,6 @@ impl Tree {
                     let s = &s[1..s.len()];
                     if let Ok(c)  = s.parse::<u32>() {
                         *current_index = c;
-                        println!("Clicked {} = {}/{}",c,current_index,name);
                     }
                 }
             })

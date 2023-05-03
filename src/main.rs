@@ -11,7 +11,7 @@ fn main_egui() {
 
 #[derive(Default)]
 struct MoriTreeApp {
-    map: std::collections::HashMap<u32,Vec<u32>>,
+    map: std::collections::HashMap<u32,Vec<f64>>,
     current_pid: u32,
 }
 
@@ -25,7 +25,7 @@ impl MoriTreeApp {
     }
 }
 
-fn ui_build_tree(ui: &mut egui::Ui, map: Option<&mut std::collections::HashMap<u32,Vec<u32>>>, current_pid: &mut u32) {
+fn ui_build_tree(ui: &mut egui::Ui, map: Option<&mut std::collections::HashMap<u32,Vec<f64>>>, current_pid: &mut u32) {
     if map.is_none() {
         return;
     }
@@ -54,11 +54,11 @@ impl eframe::App for MoriTreeApp {
 
                use egui::plot::{Line, Plot, PlotPoints};
                let g: PlotPoints = (0..s.len()).map(|i| {
-                   let mut y : u32 = 0;
+                   let mut y : f64 = 0.0;
                    if i >= s.len() {
-                       y = 0;
+                       y = 0.0;
                    } else {
-                       y = s[i].parse().unwrap_or(0);
+                       y = s[i].parse().unwrap_or(0.0);
                    }
                    [i as f64,y as f64]
                }).collect();

@@ -6,4 +6,5 @@ Pstree GUI for fun in Rust.
 
 
 This is just a toy project for learning Rust and egui.
-Warning: Don't use this in production! 
+
+Warning: *TOY* project! Not production ready.

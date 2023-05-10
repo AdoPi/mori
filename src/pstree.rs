@@ -41,8 +41,6 @@ fn stats(pid: u32) -> Process {
     let stats = fs::read_to_string(path.join("stat")).unwrap_or_default();
     let stats : Vec<_>= stats.split(" ").collect();
 
-    // TODO: calc cpu_usage
-
     if 13 > stats.len() {
         return Process {
             cpu_usage: "0".to_string(),
@@ -82,8 +80,6 @@ fn stats(pid: u32) -> Process {
         let usage : f64 = 100.0 * ( (total_time / get_hertz())) as f64 / seconds;
         cpu_usage = usage.to_string();
 
-        // TODO: use Logger::debug rusty way
-        // println!("process={};utime={};stime={};starttime={};total_time={};uptime={};seconds={};cpu_usage={}",id,utime,stime,starttime,total_time,uptime,seconds,cpu_usage);
     }
 
     Process {

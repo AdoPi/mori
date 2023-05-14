@@ -26,7 +26,7 @@ impl MoriTreeApp {
             loop {
                 // refresh data every X ms
                 ctx.request_repaint();
-                let d = std::time::Duration::from_millis(5000);
+                let d = std::time::Duration::from_millis(100);
                 std::thread::sleep(d);
             }
         });
@@ -61,17 +61,17 @@ impl eframe::App for MoriTreeApp {
            if v.is_none() {
            } else {
                let s = v.unwrap().iter().map(|e| e.to_string());
-               let s : Vec<_> = s.collect(); // TODO: collect::Vec<_>() oneliner
+               let s : Vec<_> = s.collect();
 
+               // refresh graph every x ms?
                use egui::plot::{Line, Plot, PlotPoints};
                let g: PlotPoints = (0..s.len()).map(|i| {
                    let mut y : f64 = 0.0;
-                   if i >= s.len() {
-                       y = 0.0;
-                   } else {
-                       y = s[i].parse().unwrap_or(0.0);
+                   if let Ok(v) = s[i].parse() {
+                           y = v;
                    }
-                   [i as f64,y as f64]
+                   // TODO: remove magic numbers
+                   [(i as f64/25.0),y as f64]
                }).collect();
                let line = Line::new(g);
                Plot::new("Usage").view_aspect(2.0).show(ui, |plot_ui| plot_ui.line(line));
@@ -79,7 +79,6 @@ impl eframe::App for MoriTreeApp {
 
        });
 
-       // TODO: repaint every x ms, not every frame
        ctx.request_repaint();
    }
 

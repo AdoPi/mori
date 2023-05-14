@@ -154,7 +154,6 @@ fn build_tree(tree: Tree) -> Tree {
     };
 }
 
-
 fn build_tree_with_stats( tree: Tree, map: &mut std::collections::HashMap<u32,Vec<f64>>) -> Tree {
 
     let pid = tree.process.id;
@@ -171,13 +170,18 @@ fn build_tree_with_stats( tree: Tree, map: &mut std::collections::HashMap<u32,Ve
 
         let pchild = stats(child_pid);
         // records stats
-        let mut vc = map.get_mut(&pchild.id);
+        let vc = map.get_mut(&pchild.id);
+        let max_capacity = 60 * 5 * 5; // TODO remove MAGIC NUMBERs
         if vc.is_none() {
-            map.insert(pchild.id, Vec::new());
+            map.insert(pchild.id, vec![0.0;max_capacity]);
         } else {
             let cpu_u : f64 = pchild.cpu_usage.trim().parse().unwrap();
-            vc.unwrap().push(cpu_u);
-            // insert into map again?
+            let mut vc = vc.unwrap();
+            if vc.len() >= max_capacity {
+                // this seems so unoptimized
+                vc.drain(..1);
+            }
+            vc.push(cpu_u);
         }
 
         v.push(Box::new(build_tree_with_stats(Tree {process: pchild, children: None}, map)));

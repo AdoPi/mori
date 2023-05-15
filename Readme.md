@@ -1,9 +1,6 @@
 # Mori PS
 Pstree GUI written in Rust for fun.
 
-TODO:
-* 1min process history for each process and re-use the same buffer to fill new cpu usage entries ( ringbuffer )
-
 # Why?
 For fun and learning! 
 This project does not use any library for getting the CPU usage and system processes.

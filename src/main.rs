@@ -13,6 +13,7 @@ fn main_egui() {
 struct MoriTreeApp {
     map: std::collections::HashMap<u32,Vec<f64>>,
     current_pid: u32,
+    dark_mode: bool,
 }
 
 impl MoriTreeApp {
@@ -22,6 +23,7 @@ impl MoriTreeApp {
         // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
         // for e.g. egui::PaintCallback.
         let ctx = cc.egui_ctx.clone();
+        ctx.set_visuals(egui::Visuals::light()); // default to light mode
         std::thread::Builder::new().name("Worker_thread".to_string()).spawn(move || {
             loop {
                 // refresh data every X ms
@@ -56,14 +58,12 @@ impl eframe::App for MoriTreeApp {
        });
 
        egui::CentralPanel::default().show(ctx, |ui| {
-           ui.label(format!("Process {}",self.current_pid));
            let v = self.map.get(&self.current_pid);
            if v.is_none() {
            } else {
                let s = v.unwrap().iter().map(|e| e.to_string());
                let s : Vec<_> = s.collect();
 
-               // refresh graph every x ms?
                use egui::plot::{Line, Plot, PlotPoints};
                let g: PlotPoints = (0..s.len()).map(|i| {
                    let mut y : f64 = 0.0;
@@ -74,9 +74,27 @@ impl eframe::App for MoriTreeApp {
                    [(i as f64/25.0),y as f64]
                }).collect();
                let line = Line::new(g);
-               Plot::new("Usage").view_aspect(2.0).show(ui, |plot_ui| plot_ui.line(line));
+               Plot::new("CPU usage").view_aspect(2.0).show(ui, |plot_ui| plot_ui.line(line));
            }
 
+       });
+
+       egui::TopBottomPanel::top("").show(ctx, |ui| {
+           ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+               if ui.add(egui::Button::new("Toggle Dark mode")).clicked() {
+                   // ctx: egui::Context
+                   if self.dark_mode  {
+                       ctx.set_visuals(egui::Visuals::light());
+                       self.dark_mode = false;
+                   }
+                   else {
+                       ctx.set_visuals(egui::Visuals::dark());
+                       self.dark_mode = true;
+                   }
+               }
+
+               ui.label(format!("Process {}",self.current_pid));
+           });
        });
 
        ctx.request_repaint();

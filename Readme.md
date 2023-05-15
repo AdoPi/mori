@@ -1,4 +1,4 @@
-# Mori PS
+# Mori
 Pstree GUI written in Rust for fun.
 
 # Why?

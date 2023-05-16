@@ -1,7 +1,7 @@
 # Mori
 Pstree GUI written in Rust for fun.
 
-# Why?
+## Why?
 For fun and learning! 
 This project does not use any library for getting the CPU usage and system processes.
 This was a nice way to learn more about how /proc works on Linux.
@@ -12,7 +12,7 @@ This was a nice way to learn more about how /proc works on Linux.
 
 Warning: *TOY* project! Not production ready.
 
-# Licence
+## Licence
 Copyright (c) 2023, Adonis Najmi All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
